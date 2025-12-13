@@ -8,6 +8,7 @@ import { AuthContext } from '../context/AuthContext';
 const OTPItem = ({ item, onRemove, navigation }) => {
 	const [code, setCode] = useState('');
 	const [timeLeft, setTimeLeft] = useState(0);
+	const [isRevealed, setIsRevealed] = useState(false);
 
 	useEffect(() => {
 		const totp = new OTPAuth.TOTP({
@@ -39,7 +40,7 @@ const OTPItem = ({ item, onRemove, navigation }) => {
 	return (
 		<TouchableOpacity
 			style={styles.item}
-			onPress={copyToClipboard}
+			onPress={() => setIsRevealed(!isRevealed)}
 			onLongPress={handleLongPress}
 		>
 			<View style={styles.info}>
@@ -47,8 +48,15 @@ const OTPItem = ({ item, onRemove, navigation }) => {
 				<Text style={styles.name}>{item.name}</Text>
 			</View>
 			<View style={styles.codeContainer}>
-				<Text style={styles.code}>{code}</Text>
-				<Text style={styles.timer}>{timeLeft}s</Text>
+				{isRevealed ? (
+					<TouchableOpacity onPress={copyToClipboard}>
+						<Text style={styles.code}>{code}</Text>
+						<Text style={styles.timer}>{timeLeft}s</Text>
+						<Text style={{ fontSize: 10, color: '#007AFF' }}>Tap to Copy</Text>
+					</TouchableOpacity>
+				) : (
+					<Text style={styles.code}>******</Text>
+				)}
 			</View>
 		</TouchableOpacity>
 	);
@@ -66,12 +74,12 @@ export default function OTPListScreen({ navigation }) {
 				</TouchableOpacity>
 			),
 			headerLeft: () => (
-				<TouchableOpacity onPress={logout} style={styles.headerButton}>
-					<Text style={styles.headerButtonText}>Logout</Text>
+				<TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.headerButton}>
+					<Text style={styles.headerButtonText}>Settings</Text>
 				</TouchableOpacity>
 			),
 		});
-	}, [navigation, logout]);
+	}, [navigation]);
 
 	return (
 		<View style={styles.container}>

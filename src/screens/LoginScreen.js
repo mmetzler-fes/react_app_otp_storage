@@ -1,10 +1,16 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 
 export default function LoginScreen() {
 	const [accessPassword, setAccessPassword] = useState('');
-	const { login } = useContext(AuthContext);
+	const { login, loginWithBiometrics, isBiometricSupported } = useContext(AuthContext);
+
+	useEffect(() => {
+		if (isBiometricSupported) {
+			loginWithBiometrics();
+		}
+	}, [isBiometricSupported]);
 
 	const handleLogin = async () => {
 		try {
@@ -28,6 +34,12 @@ export default function LoginScreen() {
 			/>
 
 			<Button title="Unlock" onPress={handleLogin} />
+
+			{isBiometricSupported && (
+				<View style={{ marginTop: 20 }}>
+					<Button title="Login with Biometrics" onPress={loginWithBiometrics} color="#4CAF50" />
+				</View>
+			)}
 		</View>
 	);
 }

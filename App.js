@@ -17,6 +17,7 @@ import AddOTPScreen from './src/screens/AddOTPScreen';
 import EditOTPScreen from './src/screens/EditOTPScreen';
 import ScanQRScreen from './src/screens/ScanQRScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -43,19 +44,9 @@ function AppNavigator() {
           <Stack.Screen
             name="OTPList"
             component={OTPListScreen}
-            options={({ navigation }) => ({
-              title: 'My Codes',
-              headerRight: () => (
-                <View style={{ marginRight: 10 }}>
-                  <Button
-                    onPress={() => navigation.navigate('ChangePassword')}
-                    title="Settings"
-                    color="#007AFF"
-                  />
-                </View>
-              ),
-            })}
+            options={{ title: 'My Codes' }}
           />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
           <Stack.Screen name="AddOTP" component={AddOTPScreen} options={{ title: 'Add Account' }} />
           <Stack.Screen name="EditOTP" component={EditOTPScreen} options={{ title: 'Edit Account' }} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Change Password' }} />
