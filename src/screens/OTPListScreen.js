@@ -68,18 +68,23 @@ export default function OTPListScreen({ navigation }) {
 
 	React.useLayoutEffect(() => {
 		navigation.setOptions({
-			headerRight: () => (
-				<TouchableOpacity onPress={() => navigation.navigate('AddOTP')} style={styles.headerButton}>
-					<Text style={styles.headerButtonText}>+</Text>
+			headerLeft: () => (
+				<TouchableOpacity onPress={logout} style={styles.headerButton}>
+					<Text style={styles.headerButtonText}>Lock</Text>
 				</TouchableOpacity>
 			),
-			headerLeft: () => (
-				<TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.headerButton}>
-					<Text style={styles.headerButtonText}>Settings</Text>
-				</TouchableOpacity>
+			headerRight: () => (
+				<View style={{ flexDirection: 'row', alignItems: 'center' }}>
+					<TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.headerButton}>
+						<Text style={styles.headerButtonText}>Settings</Text>
+					</TouchableOpacity>
+					<TouchableOpacity onPress={() => navigation.navigate('AddOTP')} style={styles.headerButton}>
+						<Text style={styles.headerButtonText}>+</Text>
+					</TouchableOpacity>
+				</View>
 			),
 		});
-	}, [navigation]);
+	}, [navigation, logout]);
 
 	return (
 		<View style={styles.container}>
