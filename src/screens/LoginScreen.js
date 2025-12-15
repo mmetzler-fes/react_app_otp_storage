@@ -1,10 +1,10 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, Platform } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 
 export default function LoginScreen() {
 	const [accessPassword, setAccessPassword] = useState('');
-	const { login, loginWithBiometrics, isBiometricSupported } = useContext(AuthContext);
+	const { login, loginWithBiometrics, isBiometricSupported, resetApp } = useContext(AuthContext);
 
 	useEffect(() => {
 		if (isBiometricSupported) {
@@ -40,6 +40,46 @@ export default function LoginScreen() {
 					<Button title="Login with Biometrics" onPress={loginWithBiometrics} color="#4CAF50" />
 				</View>
 			)}
+
+			<View style={{ marginTop: 40 }}>
+				<Button
+					title="Reset App (Clear All Data)"
+					onPress={() => {
+						if (Platform.OS === 'web') {
+							// Web/Tauri specific confirmation
+							if (window.confirm('Reset Application\n\nAre you sure you want to reset the application? This will delete all your stored passwords and OTPs.')) {
+								resetApp().then(() => {
+									window.alert('Success: Application reset successfully.');
+								}).catch(() => {
+									window.alert('Error: Failed to reset application');
+								});
+							}
+						} else {
+							// Mobile confirmation
+							Alert.alert(
+								'Reset Application',
+								'Are you sure you want to reset the application? This will delete all your stored passwords and OTPs.',
+								[
+									{ text: 'Cancel', style: 'cancel' },
+									{
+										text: 'Reset',
+										style: 'destructive',
+										onPress: async () => {
+											try {
+												await resetApp();
+												Alert.alert('Success', 'Application reset successfully. You can now set it up again.');
+											} catch (e) {
+												Alert.alert('Error', 'Failed to reset application');
+											}
+										}
+									}
+								]
+							);
+						}
+					}}
+					color="#FF3B30"
+				/>
+			</View>
 		</View>
 	);
 }

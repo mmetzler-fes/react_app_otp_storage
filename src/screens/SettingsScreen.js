@@ -103,39 +103,62 @@ export default function SettingsScreen({ navigation }) {
 
 	const handleImport = async () => {
 		try {
-			const result = await DocumentPicker.getDocumentAsync({
-				type: '*/*',
-				copyToCacheDirectory: true,
-			});
-
-			if (result.canceled) return;
-
-			const fileUri = result.assets[0].uri;
-			let fileContent;
-
 			if (Platform.OS === 'web') {
-				// On web, uri is a blob url, so we can fetch it
-				const response = await fetch(fileUri);
-				fileContent = await response.text();
+				// Use raw HTML input for Web/Tauri to ensure correct file picker behavior
+				const input = document.createElement('input');
+				input.type = 'file';
+				input.accept = 'application/json, .json'; // Specifically allow JSON
+
+				input.onchange = async (e) => {
+					const file = e.target.files[0];
+					if (!file) return;
+
+					try {
+						const text = await file.text();
+
+						// Try to decrypt
+						try {
+							const decrypted = decryptData(text, masterKey);
+							const parsed = JSON.parse(decrypted);
+							confirmImport(parsed);
+						} catch (decryptionError) {
+							// Failed with current key, ask for key
+							setImportedData(text);
+							setModalAction('import');
+							setShowPasswordModal(true);
+						}
+					} catch (readError) {
+						console.error('Error reading file:', readError);
+						Alert.alert('Error', 'Failed to read file');
+					}
+				};
+
+				input.click();
 			} else {
-				fileContent = await FileSystem.readAsStringAsync(fileUri);
-			}
+				// Mobile implementation
+				const result = await DocumentPicker.getDocumentAsync({
+					type: '*/*',
+					copyToCacheDirectory: true,
+				});
 
-			// Try to decrypt with current master key first
-			try {
-				const decrypted = decryptData(fileContent, masterKey);
-				const parsed = JSON.parse(decrypted);
-				confirmImport(parsed);
-			} catch (e) {
-				// Failed with current key, ask for key
-				setImportedData(fileContent);
-				setModalAction('import');
-				setShowPasswordModal(true);
-			}
+				if (result.canceled) return;
 
+				const fileUri = result.assets[0].uri;
+				const fileContent = await FileSystem.readAsStringAsync(fileUri);
+
+				try {
+					const decrypted = decryptData(fileContent, masterKey);
+					const parsed = JSON.parse(decrypted);
+					confirmImport(parsed);
+				} catch (e) {
+					setImportedData(fileContent);
+					setModalAction('import');
+					setShowPasswordModal(true);
+				}
+			}
 		} catch (e) {
 			console.error(e);
-			Alert.alert('Error', 'Import failed reading file');
+			Alert.alert('Error', 'Import failed: ' + e.message);
 		}
 	};
 

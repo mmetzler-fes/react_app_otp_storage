@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import * as SecureStore from '../utils/storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { encryptData, decryptData, hashPassword } from '../utils/crypto';
@@ -171,6 +172,40 @@ export const AuthProvider = ({ children }) => {
 		}
 	};
 
+	const resetApp = async () => {
+		try {
+			if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+				// console.log('Clearing localStorage explicitly');
+				localStorage.removeItem(KEY_ENCRYPTED_MASTER_PASS);
+				localStorage.removeItem(KEY_ACCESS_PASS_HASH);
+				localStorage.removeItem(KEY_BIOMETRIC_Auth);
+				localStorage.removeItem(KEY_BIOMETRIC_ACCESS_PASS);
+				localStorage.clear();
+			}
+
+			await SecureStore.clearStoreAsync();
+
+			// Fallback individual deletes just in case (for non-web)
+			await SecureStore.deleteItemAsync(KEY_ENCRYPTED_MASTER_PASS);
+			await SecureStore.deleteItemAsync(KEY_ACCESS_PASS_HASH);
+			await SecureStore.deleteItemAsync(KEY_BIOMETRIC_Auth);
+			await SecureStore.deleteItemAsync(KEY_BIOMETRIC_ACCESS_PASS);
+
+			setMasterKey(null);
+			setIsAuthenticated(false);
+			setIsSetup(false);
+			setLoading(false);
+
+			// Don't reload, just let React State handle the UI switch to SetupScreen
+			// window.location.reload(); 
+
+			return true;
+		} catch (e) {
+			console.error('Reset app failed', e);
+			throw e;
+		}
+	};
+
 	return (
 		<AuthContext.Provider
 			value={{
@@ -186,6 +221,7 @@ export const AuthProvider = ({ children }) => {
 				enableBiometrics,
 				disableBiometrics,
 				loginWithBiometrics,
+				resetApp,
 			}}
 		>
 			{children}

@@ -45,3 +45,16 @@ export const deleteItemAsync = async (key, options) => {
 	}
 	return SecureStore.deleteItemAsync(key, options);
 };
+
+export const clearStoreAsync = async () => {
+	if (isWeb) {
+		try {
+			localStorage.clear();
+		} catch (e) {
+			console.error('Local storage clear error', e);
+		}
+		return Promise.resolve();
+	}
+	// SecureStore doesn't have a clearAll, so we rely on individual deletes or manual cleanup
+	return Promise.resolve();
+};
