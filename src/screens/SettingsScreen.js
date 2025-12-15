@@ -7,6 +7,9 @@ import * as SecureStore from '../utils/storage';
 import { AuthContext } from '../context/AuthContext';
 import { OTPContext } from '../context/OTPContext';
 import { encryptData, decryptData } from '../utils/crypto';
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeTextFile } from '@tauri-apps/plugin-fs';
+import { isTauri } from '@tauri-apps/api/core';
 
 export default function SettingsScreen({ navigation }) {
 	const {
@@ -75,6 +78,36 @@ export default function SettingsScreen({ navigation }) {
 					// Fallback to old method if SAF fails for some reason
 					await shareFile(encryptedExport, filename);
 				}
+			} else if (isTauri()) {
+				// Tauri Desktop Environment using Plugins - Triggers "Save As" Dialog
+				try {
+					const filePath = await save({
+						defaultPath: 'otp_backup.json',
+						filters: [{
+							name: 'JSON',
+							extensions: ['json']
+						}]
+					});
+
+					if (filePath) {
+						await writeTextFile(filePath, encryptedExport);
+						Alert.alert('Success', 'Backup saved successfully!');
+					}
+				} catch (e) {
+					console.error('Tauri Export Error', e);
+					Alert.alert('Error', 'Failed to save file: ' + e.message);
+				}
+			} else if (Platform.OS === 'web') {
+				// Pure Web (Browser) Fallback
+				const blob = new Blob([encryptedExport], { type: 'application/json' });
+				const url = URL.createObjectURL(blob);
+				const link = document.createElement('a');
+				link.href = url;
+				link.download = filename;
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+				URL.revokeObjectURL(url);
 			} else {
 				// iOS / Others: Use standard share
 				await shareFile(encryptedExport, filename);

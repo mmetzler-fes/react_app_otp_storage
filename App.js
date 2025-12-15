@@ -2,7 +2,37 @@ import 'react-native-gesture-handler';
 import { enableScreens } from 'react-native-screens';
 enableScreens(false);
 import React, { useContext } from 'react';
-import { View, Text, ActivityIndicator, Button } from 'react-native';
+import { View, Text, ActivityIndicator, Button, Platform } from 'react-native';
+
+// Inject custom scrollbar styles for Web/Tauri
+if (Platform.OS === 'web') {
+  const style = document.createElement('style');
+  style.textContent = `
+    /* Force scrollbars to be visible on all scrollable elements */
+    * {
+    scrollbar- width: thin;
+  scrollbar - color: #888 #f1f1f1;
+}
+    :: -webkit - scrollbar {
+  width: 12px;
+  height: 12px;
+}
+    :: -webkit - scrollbar - track {
+  background: #f1f1f1;
+  border - radius: 0px;
+}
+    :: -webkit - scrollbar - thumb {
+  background - color: #888;
+  border - radius: 6px;
+  border: 3px solid #f1f1f1;
+}
+    :: -webkit - scrollbar - thumb:hover {
+  background - color: #555;
+}
+`;
+  document.head.appendChild(style);
+}
+
 console.log('App.js: Bundle loaded');
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -58,6 +88,7 @@ function AppNavigator() {
 }
 
 export default function App() {
+
   return (
     <SafeAreaProvider>
       <AuthProvider>

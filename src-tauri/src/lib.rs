@@ -9,6 +9,8 @@ pub fn run() {
             .build(),
         )?;
       }
+      app.handle().plugin(tauri_plugin_fs::init())?;
+      app.handle().plugin(tauri_plugin_dialog::init())?;
       Ok(())
     })
     .run(tauri::generate_context!())
