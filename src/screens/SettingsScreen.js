@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Switch, Button, Alert, TouchableOpacity, Activi
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/storage';
 import { AuthContext } from '../context/AuthContext';
 import { OTPContext } from '../context/OTPContext';
 import { encryptData, decryptData } from '../utils/crypto';

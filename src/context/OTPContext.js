@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/storage';
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthContext } from './AuthContext';

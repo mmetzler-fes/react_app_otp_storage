@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { encryptData, decryptData, hashPassword } from '../utils/crypto';
 
