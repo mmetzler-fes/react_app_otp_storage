@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch, Button, Alert, TouchableOpacity, ActivityIndicator, Modal, TextInput } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import { View, Text, StyleSheet, Switch, Button, Alert, TouchableOpacity, ActivityIndicator, Modal, TextInput, Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import * as SecureStore from '../utils/storage';
@@ -56,20 +56,48 @@ export default function SettingsScreen({ navigation }) {
 
 			const dataToExport = JSON.stringify(secrets);
 			const encryptedExport = encryptData(dataToExport, masterKey);
-
 			const filename = 'otp_backup.json';
-			const fileUri = FileSystem.documentDirectory + filename;
 
-			await FileSystem.writeAsStringAsync(fileUri, encryptedExport);
-
-			if (await Sharing.isAvailableAsync()) {
-				await Sharing.shareAsync(fileUri);
+			// Android Special Handling: Use Storage Access Framework
+			if (Platform.OS === 'android') {
+				try {
+					const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+					if (permissions.granted) {
+						const uri = await FileSystem.StorageAccessFramework.createFileAsync(permissions.directoryUri, 'otp_backup', 'application/json');
+						await FileSystem.writeAsStringAsync(uri, encryptedExport, { encoding: FileSystem.EncodingType.UTF8 });
+						Alert.alert('Success', 'Backup saved successfully!');
+					} else {
+						// User cancelled selection
+						return;
+					}
+				} catch (e) {
+					console.error('SAF Error', e);
+					// Fallback to old method if SAF fails for some reason
+					await shareFile(encryptedExport, filename);
+				}
 			} else {
-				Alert.alert('Error', 'Sharing is not available on this device');
+				// iOS / Others: Use standard share
+				await shareFile(encryptedExport, filename);
 			}
+
 		} catch (e) {
 			console.error(e);
-			Alert.alert('Error', 'Export failed');
+			Alert.alert('Error', 'Export failed: ' + e.message);
+		}
+	};
+
+	const shareFile = async (content, filename) => {
+		const fileUri = FileSystem.cacheDirectory + filename;
+		await FileSystem.writeAsStringAsync(fileUri, content);
+
+		if (await Sharing.isAvailableAsync()) {
+			await Sharing.shareAsync(fileUri, {
+				mimeType: 'application/json',
+				dialogTitle: 'Export OTP Backup',
+				UTI: 'public.json'
+			});
+		} else {
+			Alert.alert('Error', 'Sharing is not available on this device');
 		}
 	};
 
@@ -83,7 +111,15 @@ export default function SettingsScreen({ navigation }) {
 			if (result.canceled) return;
 
 			const fileUri = result.assets[0].uri;
-			const fileContent = await FileSystem.readAsStringAsync(fileUri);
+			let fileContent;
+
+			if (Platform.OS === 'web') {
+				// On web, uri is a blob url, so we can fetch it
+				const response = await fetch(fileUri);
+				fileContent = await response.text();
+			} else {
+				fileContent = await FileSystem.readAsStringAsync(fileUri);
+			}
 
 			// Try to decrypt with current master key first
 			try {
@@ -103,26 +139,39 @@ export default function SettingsScreen({ navigation }) {
 		}
 	};
 
-	const confirmImport = (data) => {
-		Alert.alert(
-			'Confirm Import',
-			`Found ${data.length} accounts. This will REPLACE your current list. Are you sure?`,
-			[
-				{ text: 'Cancel', style: 'cancel' },
-				{
-					text: 'Import',
-					onPress: async () => {
-						try {
-							await saveSecrets(data);
-							Alert.alert('Success', 'Data imported successfully');
-						} catch (e) {
-							Alert.alert('Error', 'Failed to save imported data');
-						}
-					},
-					style: 'destructive'
+	const confirmImport = async (data) => {
+		if (Platform.OS === 'web') {
+			if (window.confirm(`Found ${data.length} accounts. This will REPLACE your current list. Are you sure?`)) {
+				try {
+					await saveSecrets(data);
+					window.alert('Success: Data imported successfully');
+				} catch (e) {
+					console.error('Import error:', e);
+					window.alert('Error: Failed to save imported data (' + e.message + ')');
 				}
-			]
-		);
+			}
+		} else {
+			Alert.alert(
+				'Confirm Import',
+				`Found ${data.length} accounts. This will REPLACE your current list. Are you sure?`,
+				[
+					{ text: 'Cancel', style: 'cancel' },
+					{
+						text: 'Import',
+						onPress: async () => {
+							try {
+								await saveSecrets(data);
+								Alert.alert('Success', 'Data imported successfully');
+							} catch (e) {
+								console.error('Import error:', e);
+								Alert.alert('Error', 'Failed to save imported data');
+							}
+						},
+						style: 'destructive'
+					}
+				]
+			);
+		}
 	};
 
 	const handleModalSubmit = async () => {

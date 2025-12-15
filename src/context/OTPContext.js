@@ -73,7 +73,7 @@ export const OTPProvider = ({ children }) => {
 	};
 
 	return (
-		<OTPContext.Provider value={{ secrets, addSecret, removeSecret, updateSecret }}>
+		<OTPContext.Provider value={{ secrets, addSecret, removeSecret, updateSecret, saveSecrets }}>
 			{children}
 		</OTPContext.Provider>
 	);
