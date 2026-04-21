@@ -172,6 +172,47 @@ export const AuthProvider = ({ children }) => {
 		}
 	};
 
+	/**
+	 * Resets the access password after a successful biometric authentication.
+	 * Since the masterKey is already in memory after biometric login,
+	 * we can re-encrypt it with the new password without needing the old one.
+	 * Biometric enrollment is cleared and must be re-enabled afterwards.
+	 */
+	const resetPasswordViaBiometrics = async (newPassword) => {
+		try {
+			if (!masterKey) {
+				throw new Error('Not authenticated. Please log in first.');
+			}
+
+			// Verify biometrics are enabled and re-confirm identity
+			const biometricResult = await LocalAuthentication.authenticateAsync({
+				promptMessage: 'Confirm identity to reset password',
+				cancelLabel: 'Cancel',
+				disableDeviceFallback: false,
+			});
+
+			if (!biometricResult.success) {
+				throw new Error('Biometric authentication failed or was cancelled.');
+			}
+
+			// Re-encrypt the in-memory master key with the new password
+			const newEncryptedMasterKey = encryptData(masterKey, newPassword);
+			const newAccessHash = hashPassword(newPassword);
+
+			await SecureStore.setItemAsync(KEY_ENCRYPTED_MASTER_PASS, newEncryptedMasterKey);
+			await SecureStore.setItemAsync(KEY_ACCESS_PASS_HASH, newAccessHash);
+
+			// Clear biometric enrollment – must be re-enabled with the new password
+			await SecureStore.deleteItemAsync(KEY_BIOMETRIC_ACCESS_PASS);
+			await SecureStore.deleteItemAsync(KEY_BIOMETRIC_Auth);
+
+			return true;
+		} catch (e) {
+			console.error('Reset password via biometrics failed', e);
+			throw e;
+		}
+	};
+
 	const resetApp = async () => {
 		try {
 			if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
@@ -216,6 +257,7 @@ export const AuthProvider = ({ children }) => {
 				login,
 				logout,
 				changeAccessPassword,
+				resetPasswordViaBiometrics,
 				masterKey,
 				isBiometricSupported,
 				enableBiometrics,
